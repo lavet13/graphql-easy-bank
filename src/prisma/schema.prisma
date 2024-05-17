@@ -10,7 +10,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Food {
-  id   Int    @id @default(autoincrement())
-  name String
+// Модель пользователя
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  loans     Loan[]
+  comments  Comment[] @relation("UserComments")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
+
+// Модель кредита
+model Loan {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  term        Int      // Срок в месяцах
+  interestRate Float
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  status      LoanStatus @default(PENDING)
+  comments    Comment[] @relation("LoanComments")
+  calculation LoanCalculation? @relation(fields: [calculationId], references: [id])
+  calculationId Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("loans")
+}
+
+// Модель комментария
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  user      User?    @relation("UserComments", fields: [userId], references: [id])
+  userId    Int?
+  loan      Loan?    @relation("LoanComments", fields: [loanId], references: [id])
+  loanId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+// Модель расчета кредита
+model LoanCalculation {
+  id        Int    @id @default(autoincrement())
+  loanAmount Float
+  interestRate Float
+  term      Int    // Срок в месяцах
+  totalPayment Float // Итоговая сумма выплат
+  loan      Loan?  @relation(fields: [loanId], references: [id])
+  loanId    Int?   @unique
+
+  @@map("loan_calculations")
+}
+
+// Роли пользователя
+enum Role {
+  USER
+  ADMIN
+}
+
+// Статусы кредита
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  PAID
+  DEFAULTED
+}
+
