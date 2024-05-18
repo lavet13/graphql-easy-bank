@@ -12,45 +12,77 @@ datasource db {
 
 // Модель пользователя
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String    @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      Role     @default(USER)
+  role      Role      @default(USER)
   loans     Loan[]
   comments  Comment[] @relation("UserComments")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  financialHistory FinancialHistory[]
+  bankAccounts     BankAccount[]
 
   @@map("users")
 }
 
-// Модель кредита
-model Loan {
-  id          Int      @id @default(autoincrement())
-  amount      Float
-  term        Int      // Срок в месяцах
-  interestRate Float
+// Модель финансовой истории пользователя
+model FinancialHistory {
+  id          String   @id @default(uuid())
   user        User     @relation(fields: [userId], references: [id])
-  userId      Int
-  status      LoanStatus @default(PENDING)
-  comments    Comment[] @relation("LoanComments")
-  calculation LoanCalculation? @relation(fields: [calculationId], references: [id])
-  calculationId Int?
+  userId      String
+  income      Float
+  expenses    Float
+  creditScore Int
+
+  // Другие релевантные поля
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("financial_histories")
+}
+
+// Модель банковского счета пользователя
+model BankAccount {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  accountNumber String   @unique
+  accountType   String
+  // Другие релевантные поля
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("bank_accounts")
+}
+
+// Модель кредита
+model Loan {
+  id           String           @id @default(uuid())
+  amount       Float
+  term         Int // Срок в месяцах
+  interestRate Float
+  user         User             @relation(fields: [userId], references: [id])
+  userId       String
+  status       LoanStatus       @default(PENDING)
+  comments     Comment[]        @relation("LoanComments")
+  calculation  LoanCalculation?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@map("loans")
 }
 
 // Модель комментария
 model Comment {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   text      String
   user      User?    @relation("UserComments", fields: [userId], references: [id])
-  userId    Int?
+  userId    String?
   loan      Loan?    @relation("LoanComments", fields: [loanId], references: [id])
-  loanId    Int?
+  loanId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -59,15 +91,10 @@ model Comment {
 
 // Модель расчета кредита
 model LoanCalculation {
-  id        Int    @id @default(autoincrement())
-  loanAmount Float
-  interestRate Float
-  term      Int    // Срок в месяцах
+  id           String @id @default(uuid())
   totalPayment Float // Итоговая сумма выплат
-  loan      Loan?  @relation(fields: [loanId], references: [id])
-  loanId    Int?   @unique
-
-  @@map("loan_calculations")
+  loan         Loan   @relation(fields: [loanId], references: [id])
+  loanId       String @unique
 }
 
 // Роли пользователя
@@ -85,4 +112,3 @@ enum LoanStatus {
   PAID
   DEFAULTED
 }
-
