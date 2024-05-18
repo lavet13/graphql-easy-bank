@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from 'express';
 
 import { makeExecutableSchema } from '@graphql-tools/schema';
@@ -57,7 +56,7 @@ async function bootstrap() {
       console.log(
         `🚀 Query endpoint ready at http://localhost:${
           import.meta.env.VITE_PORT
-        }${import.meta.env.VITE_GRAPHQL_ENDPOINT}`,
+        }${import.meta.env.VITE_GRAPHQL_ENDPOINT}`
       );
     });
   }

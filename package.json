@@ -1,5 +1,5 @@
 {
-  "name": "apollo-prizma-vite-ts",
+  "name": "graphql-yoga-prizma-vite-ts",
   "version": "1.0.0",
   "description": "Node JS project with Apollo and Prizma",
   "type": "module",
@@ -10,9 +10,9 @@
     "build": "rm -rf dist && vite build",
     "debug": "vite --debug --inspect-brk",
     "docker": "docker-compose up -d",
-    "docker:dev": "dotenv -e .env.development -- docker-compose -f docker-compose.dev.yml up -d",
-    "docker:dev:stop": "dotenv -e .env.development -- docker-compose -f docker-compose.dev.yml down",
-    "start:prod": "dotenv -e NODE_ENV=production node dist/main.js",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:dev:stop": "docker-compose -f docker-compose.dev.yml down",
+    "start:prod": "cross-env NODE_ENV=production node dist/main.js",
     "start:migrate:prod": "npx prisma migrate deploy && npm run start:prod"
   },
   "keywords": [
