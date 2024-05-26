@@ -50,7 +50,7 @@ model BankAccount {
   user          User     @relation(fields: [userId], references: [id])
   userId        String
   accountNumber String   @unique
-  accountType   String
+  accountType   AccountType // Используем перечисление AccountType
   // Другие релевантные поля
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -111,4 +111,11 @@ enum LoanStatus {
   ACTIVE
   PAID
   DEFAULTED
+}
+
+// Добавляем новое перечисление AccountType
+enum AccountType {
+  SAVINGS
+  CHECKING
+  CREDIT
 }

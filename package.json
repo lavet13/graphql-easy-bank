@@ -12,6 +12,9 @@
     "docker": "docker-compose up -d",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
     "docker:dev:stop": "docker-compose -f docker-compose.dev.yml down",
+    "seed": "npx prisma db seed",
+    "migrate": "prisma migrate dev",
+    "studio": "npx prisma studio",
     "start:prod": "cross-env NODE_ENV=production node dist/main.js",
     "start:migrate:prod": "npx prisma migrate deploy && npm run start:prod"
   },
