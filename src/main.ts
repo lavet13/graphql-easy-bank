@@ -8,7 +8,6 @@ import { useJWT } from '@graphql-yoga/plugin-jwt';
 import resolvers from './graphql/resolvers';
 import typeDefs from './graphql/types';
 
-import seed from './prisma/seed';
 import { createContext } from './context';
 import { createYoga } from 'graphql-yoga';
 
@@ -49,8 +48,6 @@ async function bootstrap() {
   // });
 
   app.use(import.meta.env.VITE_GRAPHQL_ENDPOINT, yoga);
-
-  // await seed();
 
   if (import.meta.env.PROD) {
     app.listen(import.meta.env.VITE_PORT, () => {

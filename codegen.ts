@@ -15,7 +15,6 @@ const config: CodegenConfig = {
 
   config: {
     mappers: {
-      Food: '../../../node_modules/.prisma/client#Food as FoodModel',
     },
     inputMaybeValue: 'undefined | T',
   },
