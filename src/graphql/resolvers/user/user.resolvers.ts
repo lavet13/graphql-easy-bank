@@ -22,9 +22,28 @@ const resolvers: Resolvers = {
       const { login, password } = args.loginInput;
       const { token } = await ctx.prisma.user.login(login, password);
 
-      // 1 day
-      const expires =
-        Date.now() + Date.parse(new Date(1000 * 60 * 60 * 24).toString());
+      try {
+        await ctx.request.cookieStore?.set({
+          name: 'authorization',
+          value: token,
+          sameSite: 'none',
+          secure: true,
+          httpOnly: true,
+          domain: null,
+          expires: null,
+          path: '/',
+        });
+      } catch(reason) {
+        console.error(`It failed: ${reason}`);
+        throw new GraphQLError(`Failed while setting the cookie`);
+      }
+
+      return { token };
+    },
+    async signup(_, args, ctx) {
+      const { email, name, password } = args.signupInput;
+
+      const { token } = await ctx.prisma.user.signup(email, name, password);
 
       try {
         await ctx.request.cookieStore?.set({
@@ -34,13 +53,16 @@ const resolvers: Resolvers = {
           secure: true,
           httpOnly: true,
           domain: null,
-          expires,
+          expires: null,
           path: '/',
         });
-      } catch(reason) {
+      } catch (reason) {
         console.error(`It failed: ${reason}`);
         throw new GraphQLError(`Failed while setting the cookie`);
       }
+
+      // console.log({ authorization: await ctx.request.cookieStore?.get('authorization') });
+      // console.log({ cookies: await ctx.request.cookieStore?.getAll()});
 
       return { token };
     },

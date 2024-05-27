@@ -10,8 +10,15 @@ export default gql`
     password: String!
   }
 
+  input SignupInput {
+    email: String!
+    name: String!
+    password: String!
+  }
+
   type Mutation {
     login(loginInput: LoginInput!): AuthPayload!
+    signup(signupInput: SignupInput!): AuthPayload!
   }
 
   type AuthPayload {
