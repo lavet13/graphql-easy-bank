@@ -15,6 +15,7 @@ const config: CodegenConfig = {
 
   config: {
     mappers: {
+      User: '../../../node_modules/.prisma/client#User as UserModel',
     },
     inputMaybeValue: 'undefined | T',
   },

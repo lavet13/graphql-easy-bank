@@ -1,14 +1,19 @@
 import gql from 'graphql-tag';
 
 export default gql`
-  scalar Date
-
   type Query {
-    foods: [Food!]!
+    me: User
   }
 
-  type Food {
+  type User {
     id: ID!
+    email: String!
     name: String!
+    role: Role!
+  }
+
+  enum Role {
+    USER
+    ADMIN
   }
 `;
