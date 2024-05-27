@@ -5,6 +5,19 @@ export default gql`
     me: User
   }
 
+  input LoginInput {
+    login: String!
+    password: String!
+  }
+
+  type Mutation {
+    login(loginInput: LoginInput!): AuthPayload!
+  }
+
+  type AuthPayload {
+    token: String!
+  }
+
   type User {
     id: ID!
     email: String!
