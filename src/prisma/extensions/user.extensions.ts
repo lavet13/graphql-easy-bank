@@ -37,6 +37,7 @@ const userExtension = Prisma.defineExtension(client => {
 
           return { token };
         },
+
         async signup(email: string, name: string, password: string) {
           const hashedPassword = await generatePasswordHash(password);
 

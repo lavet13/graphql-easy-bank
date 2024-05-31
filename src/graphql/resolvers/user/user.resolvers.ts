@@ -66,6 +66,16 @@ const resolvers: Resolvers = {
 
       return { token };
     },
+    async logout(_, __, ctx) {
+      try {
+        await ctx.request.cookieStore?.delete('authorization');
+
+        return true;
+      } catch(err: any) {
+        console.log({ err });
+        throw new GraphQLError(`Error occured while logging out!`);
+      }
+    },
   },
 };
 

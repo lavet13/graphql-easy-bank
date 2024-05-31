@@ -19,6 +19,7 @@ export default gql`
   type Mutation {
     login(loginInput: LoginInput!): AuthPayload!
     signup(signupInput: SignupInput!): AuthPayload!
+    logout: Boolean!
   }
 
   type AuthPayload {

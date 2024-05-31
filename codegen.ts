@@ -16,6 +16,9 @@ const config: CodegenConfig = {
   config: {
     mappers: {
       User: '../../../node_modules/.prisma/client#User as UserModel',
+      Loan: '../../../node_modules/.prisma/client#Loan as LoanModel',
+      LoanCalculation: '../../../node_modules/.prisma/client#LoanCalculation as LoanCalculationModel',
+      Comment: '../../../node_modules/.prisma/client#Comment as CommentModel',
     },
     inputMaybeValue: 'undefined | T',
   },
