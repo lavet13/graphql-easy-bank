@@ -3,6 +3,20 @@ import gql from 'graphql-tag';
 export default gql`
   type Query {
     loans(input: LoansInput!): LoansResponse!
+    loanById(id: ID!): Loan!
+  }
+
+  type Mutation {
+    updateLoan(input: UpdateLoanInput!): Loan!
+    delLoan(id: ID!): Boolean!
+  }
+
+  input UpdateLoanInput {
+    id: ID!
+    term: Int!
+    amount: Float!
+    status: LoanStatus!
+    text: String!
   }
 
   input LoansInput {
@@ -30,7 +44,7 @@ export default gql`
     interestRate: Float!
     user: User!
     status: LoanStatus!
-    comments: [Comment!]!
+    comment: Comment!
     calculation: LoanCalculation
     createdAt: Date!
     updatedAt: Date!

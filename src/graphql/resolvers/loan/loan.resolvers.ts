@@ -6,6 +6,10 @@ import {
 } from '@graphql-tools/resolvers-composition';
 import { GraphQLError } from 'graphql';
 import { applyConstraints } from '../../../utils/resolvers/applyConstraints';
+import { parseIntSafe } from '../../../utils/resolvers/parseIntSafe';
+import { validLoanId } from '../../composition/validIds';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { User } from '@prisma/client';
 
 const resolvers: Resolvers = {
   Query: {
@@ -153,8 +157,96 @@ const resolvers: Resolvers = {
         },
       };
     },
+    async loanById(_, args, ctx) {
+      const id = parseIntSafe(args.id);
+
+      if (id === null) {
+        return Promise.reject(new GraphQLError(`Invalid loan id.`));
+      }
+
+      return ctx.prisma.loan
+        .findUniqueOrThrow({
+          where: {
+            id,
+          },
+        })
+        .catch((err: unknown) => {
+          if (
+            err instanceof PrismaClientKnownRequestError &&
+            err.code === 'P2025'
+          ) {
+            return Promise.reject(
+              new GraphQLError(`Cannot find post by id \`${id}\``),
+            );
+          }
+
+          return Promise.reject(err);
+        });
+    },
   },
-  Mutation: {},
+  Mutation: {
+    updateLoan(_, args, ctx) {
+      const { id, term, amount, status, text } = args.input;
+
+      return ctx.prisma.loan.update({
+        where: {
+          id: +id,
+        },
+        data: {
+          term,
+          amount,
+          status,
+          comment: {
+            update: {
+              where: {
+                loanId: +id,
+              },
+              data: {
+                text,
+              },
+            },
+          },
+        },
+      });
+    },
+    async delLoan(_, args, ctx) {
+      const loanIdToDelete = args.id;
+
+      try {
+        await ctx.prisma.loan.delete({
+          where: {
+            id: +loanIdToDelete,
+          },
+        });
+
+        return true;
+      } catch(err: unknown){
+        if(err instanceof PrismaClientKnownRequestError) {
+          if(err.code === 'P2025') {
+            throw new GraphQLError(`Loan with ID \`${loanIdToDelete}\` not found and cannot be deleted.`);
+          }
+        }
+        console.log({err});
+        throw new GraphQLError('Unknown error!');
+      }
+    },
+  },
+  Loan: {
+    user(parent, _, ctx) {
+      return ctx.prisma.user.findUniqueOrThrow({
+        where: {
+          id: parent.userId,
+        },
+      });
+    },
+    comment(parent, _, ctx) {
+      return ctx.prisma.comment.findUniqueOrThrow({
+        where: {
+          loanId: parent.id,
+        },
+      });
+    },
+  },
 };
 
 const resolversComposition: ResolversComposerMapping<any> = {};

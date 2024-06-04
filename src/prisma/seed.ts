@@ -13,12 +13,20 @@ export default async function seed() {
   const password = 'password';
   const hashedPassword = await generatePasswordHash(password);
 
-  await prisma.financialHistory.deleteMany({});
-  await prisma.bankAccount.deleteMany({});
-  await prisma.loan.deleteMany({});
-  await prisma.loanCalculation.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.comment.deleteMany({});
+  const deleteFinancialHistories = prisma.financialHistory.deleteMany({});
+  const deleteBankAccounts = prisma.bankAccount.deleteMany({});
+  const deleteLoans = prisma.loan.deleteMany({});
+  const deleteLoanCalculations = prisma.loanCalculation.deleteMany({});
+  const deleteUsers = prisma.user.deleteMany({});
+  const deleteComments = prisma.comment.deleteMany({});
+  await prisma.$transaction([
+    deleteFinancialHistories,
+    deleteBankAccounts,
+    deleteLoans,
+    deleteLoanCalculations,
+    deleteUsers,
+    deleteComments,
+  ]);
 
   const firstUser = await prisma.user.create({
     data: {
@@ -58,11 +66,12 @@ export default async function seed() {
 
   const loan = await prisma.loan.findFirst();
 
-  await prisma.comment.createMany({
-    data: [
-      { text: 'some text__1', loanId: loan?.id },
-      { text: 'some text__2', loanId: loan?.id },
-    ],
+  await prisma.comment.create({
+    data: {
+      text: 'some text',
+      loanId: loan?.id,
+      userId: firstUser.id,
+    },
   });
 
   const comments = await prisma.comment.findMany({

@@ -30,12 +30,12 @@ model User {
 
 // Модель финансовой истории пользователя
 model FinancialHistory {
-  id          String @id @default(uuid())
-  user        User   @relation(fields: [userId], references: [id])
-  userId      String
+  id          String  @id @default(uuid())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
   income      Decimal @db.Money
   expenses    Decimal @db.Money
-  creditScore Int @db.SmallInt
+  creditScore Int     @db.SmallInt
 
   // Другие релевантные поля
   createdAt DateTime @default(now())
@@ -47,8 +47,8 @@ model FinancialHistory {
 // Модель банковского счета пользователя
 model BankAccount {
   id            String      @id @default(uuid())
-  user          User        @relation(fields: [userId], references: [id])
-  userId        String
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId        String?
   accountNumber String      @unique
   accountType   AccountType // Используем перечисление AccountType
   // Другие релевантные поля
@@ -60,14 +60,14 @@ model BankAccount {
 
 // Модель кредита
 model Loan {
-  id           Int            @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   amount       Float
   term         Int // Срок в месяцах
   interestRate Float
-  user         User              @relation(fields: [userId], references: [id])
-  userId       String
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId       String?
   status       LoanStatus        @default(PENDING)
-  comments     Comment[]         @relation("LoanComments")
+  comment      Comment?
   calculation  LoanCalculation[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
@@ -79,10 +79,10 @@ model Loan {
 model Comment {
   id        String   @id @default(uuid())
   text      String
-  user      User?    @relation("UserComments", fields: [userId], references: [id])
+  user      User?     @relation("UserComments", fields: [userId], references: [id], onDelete: SetNull)
   userId    String?
-  loan      Loan?    @relation("LoanComments", fields: [loanId], references: [id])
-  loanId    Int?
+  loan      Loan?     @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  loanId    Int?      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -93,7 +93,7 @@ model Comment {
 model LoanCalculation {
   id           String   @id @default(uuid())
   totalPayment Float
-  loan         Loan     @relation(fields: [loanId], references: [id])
+  loan         Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
   loanId       Int
   createdAt    DateTime @default(now())
 
