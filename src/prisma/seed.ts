@@ -37,8 +37,8 @@ export default async function seed() {
       financialHistory: {
         createMany: {
           data: [
-            { income: 1, expenses: 2, creditScore: 2 },
-            { income: 2, expenses: 3, creditScore: 4 },
+            { income: 1, expenses: 2, currentBalance: -1 },
+            { income: 2, expenses: 3, currentBalance: -2 },
           ],
         },
       },

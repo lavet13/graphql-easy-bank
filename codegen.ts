@@ -19,6 +19,7 @@ const config: CodegenConfig = {
       Loan: '../../../node_modules/.prisma/client#Loan as LoanModel',
       LoanCalculation: '../../../node_modules/.prisma/client#LoanCalculation as LoanCalculationModel',
       Comment: '../../../node_modules/.prisma/client#Comment as CommentModel',
+      Finance: '../../../node_modules/.prisma/client#FinancialHistory as FinancialHistoryModel',
     },
     inputMaybeValue: 'undefined | T',
   },

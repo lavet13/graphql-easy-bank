@@ -1,7 +1,7 @@
 import { ResolversComposition } from '@graphql-tools/resolvers-composition';
 import { GraphQLError, GraphQLFieldResolver } from 'graphql';
 import { ContextValue } from '../../context';
-import { parseIntSafe } from '../../utils/resolvers/parseIntSafe';
+import { parseIntSafe } from '../../helpers/parse-int-safe';
 
 // we don't have to do like that
 export const validLoanId =

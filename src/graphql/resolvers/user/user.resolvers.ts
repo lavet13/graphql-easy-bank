@@ -15,7 +15,7 @@ const resolvers: Resolvers = {
           id: ctx.me!.id,
         },
       });
-    }
+    },
   },
   Mutation: {
     async login(_, args, ctx) {
@@ -33,7 +33,7 @@ const resolvers: Resolvers = {
           expires: null,
           path: '/',
         });
-      } catch(reason) {
+      } catch (reason) {
         console.error(`It failed: ${reason}`);
         throw new GraphQLError(`Failed while setting the cookie`);
       }
@@ -43,7 +43,11 @@ const resolvers: Resolvers = {
     async signup(_, args, ctx) {
       const { email, name, password } = args.signupInput;
 
-      const { token } = await ctx.prisma.user.signup(email, name, password);
+      const { token } = await ctx.prisma.user.signup(
+        email,
+        name.length !== 0 ? 'noname' : name,
+        password,
+      );
 
       try {
         await ctx.request.cookieStore?.set({
@@ -71,7 +75,7 @@ const resolvers: Resolvers = {
         await ctx.request.cookieStore?.delete('authorization');
 
         return true;
-      } catch(err: any) {
+      } catch (err: any) {
         console.log({ err });
         throw new GraphQLError(`Error occured while logging out!`);
       }

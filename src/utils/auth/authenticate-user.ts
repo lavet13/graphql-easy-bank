@@ -4,13 +4,30 @@ import { GraphQLError } from 'graphql';
 
 export default async function authenticateUser(
   request: Request,
-): Promise<string | null> {
+): Promise<jwt.JwtPayload | null> {
   const token = await getToken(request);
   console.log({ token });
 
-  if (!token) return null;
+  if(!token) return null;
 
-  return token;
+  let verified = null;
+
+  try {
+    verified = (await verify(
+      token as string,
+      import.meta.env.VITE_SECRET,
+    )) as jwt.JwtPayload;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      await request.cookieStore?.delete('authorization');
+
+      throw new GraphQLError(`Failed verification token.`, {
+        extensions: { statusCode: 401 },
+      });
+    }
+  }
+
+  return verified;
 }
 
 async function getToken(request: Request) {

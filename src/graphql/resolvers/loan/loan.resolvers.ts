@@ -5,11 +5,16 @@ import {
   composeResolvers,
 } from '@graphql-tools/resolvers-composition';
 import { GraphQLError } from 'graphql';
-import { applyConstraints } from '../../../utils/resolvers/applyConstraints';
-import { parseIntSafe } from '../../../utils/resolvers/parseIntSafe';
-import { validLoanId } from '../../composition/validIds';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { User } from '@prisma/client';
+import { applyConstraints } from '../../../helpers/apply-constraints';
+import { parseIntSafe } from '../../../helpers/parse-int-safe';
+import {
+  PrismaClientKnownRequestError,
+  Decimal,
+} from '@prisma/client/runtime/library';
+import { calculateInterestRate } from '../../../utils/loan/calculate-interest-rate';
+import { calculateCreditScore } from '../../../utils/loan/calculate-credit-score';
+import { calculateTotalPayment } from '../../../utils/loan/calculate-total-payment';
+import { isAdmin, isAuthenticated } from '../../composition/authorization';
 
 const resolvers: Resolvers = {
   Query: {
@@ -185,8 +190,69 @@ const resolvers: Resolvers = {
     },
   },
   Mutation: {
-    updateLoan(_, args, ctx) {
+    async updateLoan(_, args, ctx) {
       const { id, term, amount, status, text } = args.input;
+
+      const loan = await ctx.prisma.loan.findUnique({
+        where: {
+          id: +id,
+        },
+        include: {
+          user: {
+            include: {
+              financialHistory: true,
+            },
+          },
+        },
+      });
+
+      if (!loan) {
+        throw new GraphQLError(`Loan with ID \`${id}\` not found.`);
+      }
+
+      const user = loan.user!;
+      const financialHistories = user.financialHistory;
+      const latestFinancialHistory = user?.financialHistory?.[0] || null;
+
+      const creditScore = calculateCreditScore(financialHistories, term);
+      const interestRate = calculateInterestRate(creditScore, amount, term);
+
+      const totalPayment = calculateTotalPayment(amount, interestRate, term);
+
+      let currentBalance =
+        latestFinancialHistory?.currentBalance ?? new Decimal(0);
+      let income = latestFinancialHistory?.income ?? new Decimal(0);
+      let expenses = latestFinancialHistory?.expenses ?? new Decimal(0);
+
+      if (status === 'APPROVED') {
+        currentBalance = currentBalance.plus(new Decimal(amount.toString()));
+        income = income.plus(new Decimal(amount.toString()));
+      } else if (status === 'PAID') {
+        currentBalance = currentBalance.minus(new Decimal(amount.toString()));
+        expenses = expenses.plus(new Decimal(amount.toString()));
+      }
+
+      // new financial history record
+      await ctx.prisma.financialHistory.create({
+        data: {
+          userId: user.id,
+          income: income.toNumber(),
+          expenses: expenses.toNumber(),
+          currentBalance: currentBalance.toNumber(),
+          creditScore,
+        },
+      });
+
+      await ctx.prisma.loanCalculation.create({
+        data: {
+          totalPayment,
+          loan: {
+            connect: {
+              id: loan.id,
+            },
+          },
+        },
+      });
 
       return ctx.prisma.loan.update({
         where: {
@@ -196,14 +262,52 @@ const resolvers: Resolvers = {
           term,
           amount,
           status,
-          comment: {
-            update: {
-              where: {
-                loanId: +id,
-              },
-              data: {
-                text,
-              },
+          interestRate,
+          ...(text.length !== 0
+            ? {
+                comment: {
+                  upsert: {
+                    update: {
+                      text,
+                    },
+                    create: {
+                      text,
+                      user: {
+                        connect: {
+                          id: user.id,
+                        },
+                      },
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
+      });
+    },
+    async createLoan(_, args, ctx) {
+      const term = args.input.term;
+      const amount = args.input.amount;
+
+      const financialHistory = await ctx.prisma.financialHistory.findMany({
+        where: {
+          user: {
+            id: ctx.me!.id,
+          },
+        },
+      });
+
+      const creditScore = calculateCreditScore(financialHistory, term);
+      const interestRate = calculateInterestRate(creditScore, amount, term);
+
+      return ctx.prisma.loan.create({
+        data: {
+          term,
+          amount,
+          interestRate,
+          user: {
+            connect: {
+              id: ctx.me!.id,
             },
           },
         },
@@ -220,27 +324,32 @@ const resolvers: Resolvers = {
         });
 
         return true;
-      } catch(err: unknown){
-        if(err instanceof PrismaClientKnownRequestError) {
-          if(err.code === 'P2025') {
-            throw new GraphQLError(`Loan with ID \`${loanIdToDelete}\` not found and cannot be deleted.`);
+      } catch (err: unknown) {
+        if (err instanceof PrismaClientKnownRequestError) {
+          if (err.code === 'P2025') {
+            throw new GraphQLError(
+              `Loan with ID \`${loanIdToDelete}\` not found and cannot be deleted.`,
+            );
           }
         }
-        console.log({err});
+        console.log({ err });
         throw new GraphQLError('Unknown error!');
       }
     },
   },
   Loan: {
     user(parent, _, ctx) {
+      const userId = parent.userId;
+      if (!userId) return null;
+
       return ctx.prisma.user.findUniqueOrThrow({
         where: {
-          id: parent.userId,
+          id: userId,
         },
       });
     },
     comment(parent, _, ctx) {
-      return ctx.prisma.comment.findUniqueOrThrow({
+      return ctx.prisma.comment.findUnique({
         where: {
           loanId: parent.id,
         },
@@ -249,6 +358,9 @@ const resolvers: Resolvers = {
   },
 };
 
-const resolversComposition: ResolversComposerMapping<any> = {};
+const resolversComposition: ResolversComposerMapping<any> = {
+  'Query.loans': [isAuthenticated(), isAdmin()],
+  'Mutation.createLoan': [isAuthenticated()],
+};
 
 export default composeResolvers(resolvers, resolversComposition);

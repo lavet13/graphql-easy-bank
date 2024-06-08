@@ -4,6 +4,7 @@ import { GraphQLError } from 'graphql';
 import createToken from '../../utils/auth/create-token';
 import validatePassword from '../../utils/auth/validate-password';
 import generatePasswordHash from '../../utils/auth/generate-password-hash';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 const userExtension = Prisma.defineExtension(client => {
   return client.$extends({
@@ -41,13 +42,26 @@ const userExtension = Prisma.defineExtension(client => {
         async signup(email: string, name: string, password: string) {
           const hashedPassword = await generatePasswordHash(password);
 
-          const newUser = await client.user.create({
-            data: {
-              email,
-              name,
-              password: hashedPassword,
-            },
-          });
+          const newUser = await client.user
+            .create({
+              data: {
+                email,
+                name,
+                password: hashedPassword,
+              },
+            })
+            .catch((err: unknown) => {
+              if (
+                err instanceof PrismaClientKnownRequestError &&
+                err.code === 'P2002'
+              ) {
+                return Promise.reject(
+                  new GraphQLError(`Пользователь с таким E-mail ${email} уже существует!`),
+                );
+              }
+
+              return Promise.reject(err);
+            });
 
           const token = createToken(newUser, { expiresIn: '24h' });
 
@@ -59,4 +73,3 @@ const userExtension = Prisma.defineExtension(client => {
 });
 
 export default userExtension;
-

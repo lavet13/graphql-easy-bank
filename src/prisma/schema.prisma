@@ -10,7 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Модель пользователя
 model User {
   id        String    @id @default(uuid())
   name      String
@@ -28,26 +27,23 @@ model User {
   @@map("users")
 }
 
-// Модель финансовой истории пользователя
 model FinancialHistory {
-  id          String  @id @default(uuid())
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId      String?
-  income      Decimal @db.Money
-  expenses    Decimal @db.Money
-  creditScore Int     @db.SmallInt
-
-  // Другие релевантные поля
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         String?
+  income         Decimal  @db.Money
+  expenses       Decimal  @db.Money
+  creditScore    Int      @default(700) @db.SmallInt
+  currentBalance Decimal  @db.Money
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("financial_histories")
 }
 
-// Модель банковского счета пользователя
 model BankAccount {
   id            String      @id @default(uuid())
-  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId        String?
   accountNumber String      @unique
   accountType   AccountType // Используем перечисление AccountType
@@ -64,7 +60,7 @@ model Loan {
   amount       Float
   term         Int // Срок в месяцах
   interestRate Float
-  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId       String?
   status       LoanStatus        @default(PENDING)
   comment      Comment?
@@ -75,21 +71,19 @@ model Loan {
   @@map("loans")
 }
 
-// Модель комментария
 model Comment {
   id        String   @id @default(uuid())
   text      String
-  user      User?     @relation("UserComments", fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation("UserComments", fields: [userId], references: [id], onDelete: SetNull)
   userId    String?
-  loan      Loan?     @relation(fields: [loanId], references: [id], onDelete: SetNull)
-  loanId    Int?      @unique
+  loan      Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  loanId    Int?     @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("comments")
 }
 
-// Модель расчета кредита
 model LoanCalculation {
   id           String   @id @default(uuid())
   totalPayment Float

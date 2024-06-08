@@ -7,8 +7,14 @@ export default gql`
   }
 
   type Mutation {
+    createLoan(input: CreateLoanInput!): Loan!
     updateLoan(input: UpdateLoanInput!): Loan!
     delLoan(id: ID!): Boolean!
+  }
+
+  input CreateLoanInput {
+    term: Int!
+    amount: Float!
   }
 
   input UpdateLoanInput {
@@ -42,9 +48,9 @@ export default gql`
     amount: Float!
     term: Int!
     interestRate: Float!
-    user: User!
+    user: User
     status: LoanStatus!
-    comment: Comment!
+    comment: Comment
     calculation: LoanCalculation
     createdAt: Date!
     updatedAt: Date!
