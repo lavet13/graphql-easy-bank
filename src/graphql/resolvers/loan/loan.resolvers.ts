@@ -71,7 +71,7 @@ const resolvers: Resolvers = {
             // console.log({ previousValidPost });
             // cursor = previousValidPost ? { id: previousValidPost.id } : undefined;
 
-            cursor = { id: -1 }; // we guarantee loans are empty
+            cursor = { id: -1 }; // we guarantee credits are empty
           } else if (direction === PaginationDirection.BACKWARD) {
             const nextValidLoan = await ctx.prisma.loan.findFirst({
               where: { id: { gt: args.input.before } },
@@ -86,8 +86,8 @@ const resolvers: Resolvers = {
         }
       }
 
-      // fetching loans with extra one, so to determine if there's more to fetch
-      const loans = await ctx.prisma.loan.findMany({
+      // fetching credits with extra one, so to determine if there's more to fetch
+      const credits = await ctx.prisma.loan.findMany({
         take:
           direction === PaginationDirection.BACKWARD ? -(take + 1) : take + 1, // Fetch one extra loan for determining `hasNextPage`
         cursor,
@@ -97,11 +97,11 @@ const resolvers: Resolvers = {
 
       // If no results are retrieved, it means we've reached the end of the
       // pagination or because we stumble upon invalid cursor, so on the
-      // client we just clearing `before` and `after` cursors to get first loans
-      // forward pagination could have no loans at all,
+      // client we just clearing `before` and `after` cursors to get first credits
+      // forward pagination could have no credits at all,
       // or because cursor is set to `{ id: -1 }`, for backward pagination
-      // the only thing would happen if only loans are empty!
-      if (loans.length === 0) {
+      // the only thing would happen if only credits are empty!
+      if (credits.length === 0) {
         return {
           edges: [],
           pageInfo: {
@@ -112,39 +112,39 @@ const resolvers: Resolvers = {
         };
       }
 
-      // If the number of loans fetched is less than or equal to the
-      // `take` value, you include all the loans in the `edges` array.
-      // However, if the number of loans fetched is greater than
+      // If the number of credits fetched is less than or equal to the
+      // `take` value, you include all the credits in the `edges` array.
+      // However, if the number of credits fetched is greater than
       // the `take` value, you exclude the extra loan from
-      // the `edges` array by slicing the loans array.
+      // the `edges` array by slicing the credits array.
       const edges =
-        loans.length <= take
-          ? loans
+        credits.length <= take
+          ? credits
           : direction === PaginationDirection.BACKWARD
-            ? loans.slice(1, loans.length)
-            : loans.slice(0, -1);
+            ? credits.slice(1, credits.length)
+            : credits.slice(0, -1);
 
-      const hasMore = loans.length > take;
+      const hasMore = credits.length > take;
 
       const startCursor = edges.length === 0 ? null : edges[0]?.id;
       const endCursor = edges.length === 0 ? null : edges.at(-1)?.id;
 
-      // This is where the condition `edges.length < loans.length` comes into
+      // This is where the condition `edges.length < credits.length` comes into
       // play. If the length of the `edges` array is less than the length
-      // of the `loans` array, it means that the extra loan was fetched and
+      // of the `credits` array, it means that the extra loan was fetched and
       // excluded from the `edges` array. That implies that there are more
-      // loans available to fetch in the current pagination direction.
+      // credits available to fetch in the current pagination direction.
       const hasNextPage =
         direction === PaginationDirection.BACKWARD ||
         (direction === PaginationDirection.FORWARD && hasMore) ||
-        (direction === PaginationDirection.NONE && edges.length < loans.length);
+        (direction === PaginationDirection.NONE && edges.length < credits.length);
       // /\
       // |
       // |
-      // NOTE: This condition `edges.length < loans.length` is essentially
+      // NOTE: This condition `edges.length < credits.length` is essentially
       // checking the same thing as `hasMore`, which is whether there are more
-      // loans available to fetch. Therefore, you can safely replace
-      // `edges.length < loans.length` with hasMore in the condition for
+      // credits available to fetch. Therefore, you can safely replace
+      // `edges.length < credits.length` with hasMore in the condition for
       // determining hasNextPage. Both conditions are equivalent and will
       // produce the same result.
 
