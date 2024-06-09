@@ -137,7 +137,8 @@ const resolvers: Resolvers = {
       const hasNextPage =
         direction === PaginationDirection.BACKWARD ||
         (direction === PaginationDirection.FORWARD && hasMore) ||
-        (direction === PaginationDirection.NONE && edges.length < credits.length);
+        (direction === PaginationDirection.NONE &&
+          edges.length < credits.length);
       // /\
       // |
       // |
@@ -200,7 +201,11 @@ const resolvers: Resolvers = {
         include: {
           user: {
             include: {
-              financialHistory: true,
+              financialHistory: {
+                orderBy: {
+                  createdAt: 'desc',
+                },
+              },
             },
           },
         },
@@ -212,47 +217,66 @@ const resolvers: Resolvers = {
 
       const user = loan.user!;
       const financialHistories = user.financialHistory;
-      const latestFinancialHistory = user?.financialHistory?.[0] || null;
+      const latestFinancialHistory = user.financialHistory?.[0] || null;
 
       const creditScore = calculateCreditScore(financialHistories, term);
       const interestRate = calculateInterestRate(creditScore, amount, term);
-
       const totalPayment = calculateTotalPayment(amount, interestRate, term);
 
+      console.log({ latestFinancialHistory });
       let currentBalance =
         latestFinancialHistory?.currentBalance ?? new Decimal(0);
       let income = latestFinancialHistory?.income ?? new Decimal(0);
       let expenses = latestFinancialHistory?.expenses ?? new Decimal(0);
+      console.log({ currentBalance, income, expenses });
 
       if (status === 'APPROVED') {
         currentBalance = currentBalance.plus(new Decimal(amount.toString()));
         income = income.plus(new Decimal(amount.toString()));
+        // new financial history record
+        await ctx.prisma.financialHistory.create({
+          data: {
+            userId: user.id,
+            income: income.toNumber(),
+            expenses: expenses.toNumber(),
+            currentBalance: currentBalance.toNumber(),
+            creditScore,
+          },
+        });
+        await ctx.prisma.loanCalculation.create({
+          data: {
+            totalPayment,
+            loan: {
+              connect: {
+                id: loan.id,
+              },
+            },
+          },
+        });
       } else if (status === 'PAID') {
         currentBalance = currentBalance.minus(new Decimal(amount.toString()));
         expenses = expenses.plus(new Decimal(amount.toString()));
-      }
-
-      // new financial history record
-      await ctx.prisma.financialHistory.create({
-        data: {
-          userId: user.id,
-          income: income.toNumber(),
-          expenses: expenses.toNumber(),
-          currentBalance: currentBalance.toNumber(),
-          creditScore,
-        },
-      });
-
-      await ctx.prisma.loanCalculation.create({
-        data: {
-          totalPayment,
-          loan: {
-            connect: {
-              id: loan.id,
+        // new financial history record
+        await ctx.prisma.financialHistory.create({
+          data: {
+            userId: user.id,
+            income: income.toNumber(),
+            expenses: expenses.toNumber(),
+            currentBalance: currentBalance.toNumber(),
+            creditScore,
+          },
+        });
+        await ctx.prisma.loanCalculation.create({
+          data: {
+            totalPayment,
+            loan: {
+              connect: {
+                id: loan.id,
+              },
             },
           },
-        },
-      });
+        });
+      }
 
       return ctx.prisma.loan.update({
         where: {

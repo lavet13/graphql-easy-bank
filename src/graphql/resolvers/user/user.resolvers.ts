@@ -46,7 +46,7 @@ const resolvers: Resolvers = {
 
       const { token } = await ctx.prisma.user.signup(
         email,
-        name.length !== 0 ? 'noname' : name,
+        name,
         password
       );
 
