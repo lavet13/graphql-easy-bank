@@ -10,6 +10,7 @@ import { GraphQLError } from 'graphql';
 const resolvers: Resolvers = {
   Query: {
     me(_, __, ctx) {
+      console.log({ me: ctx.me });
       return ctx.prisma.user.findFirst({
         where: {
           id: ctx.me!.id,
@@ -46,7 +47,7 @@ const resolvers: Resolvers = {
       const { token } = await ctx.prisma.user.signup(
         email,
         name.length !== 0 ? 'noname' : name,
-        password,
+        password
       );
 
       try {

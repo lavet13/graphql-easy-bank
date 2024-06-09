@@ -11,6 +11,7 @@ const userExtension = Prisma.defineExtension(client => {
     model: {
       user: {
         async login(login: string, password: string) {
+          console.log({ login, password });
           const user = await client.user.findFirst({
             where: {
               OR: [
@@ -23,6 +24,8 @@ const userExtension = Prisma.defineExtension(client => {
               ],
             },
           });
+
+          console.log({ user });
 
           if (!user) {
             throw new GraphQLError('Такого пользователя не существует!');
@@ -56,7 +59,9 @@ const userExtension = Prisma.defineExtension(client => {
                 err.code === 'P2002'
               ) {
                 return Promise.reject(
-                  new GraphQLError(`Пользователь с таким E-mail ${email} уже существует!`),
+                  new GraphQLError(
+                    `Пользователь с таким E-mail ${email} уже существует!`
+                  )
                 );
               }
 
